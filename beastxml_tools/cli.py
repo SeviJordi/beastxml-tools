@@ -3,7 +3,7 @@ from beastxml_tools.operations.validate import validate_xml
 from beastxml_tools.operations.summarize import summarize_xml
 from beastxml_tools.operations.modify_prior import modify_prior as modify_prior_func
 from beastxml_tools.operations.prior_inspector import inspect_prior as inspect_prior_func
-from beastxml_tools.operations.modify_chain import modify_chain as modify_chain_func
+from beastxml_tools.operations.update_mcmc import modify_chain as modify_chain_func
 
 # default output is stdout
 
@@ -46,7 +46,7 @@ def inspect_prior():
     inspect_prior_func()
 
 @app.command()
-def modify_chain(
+def update_mcmc(
     xml_path: str = typer.Argument(..., help="Path to the BEAST XML file."),
     new_chain_length: int = typer.Option(None, "--chain-length", "-cl", help="New chain length."),
     new_store_every: int = typer.Option(None, "--store-every", "-se", help="New store every value."),

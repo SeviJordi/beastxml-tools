@@ -73,3 +73,9 @@ Visualize and get summary statistics of a prior distribution.
 ```bash
 beastxml inspect-prior
 ```
+
+### **5. Update MCMC settings**
+Modify MCMC chain settings like length, store every, and log every.
+```bash
+beastxml update-mcmc <path-to-xml> --output <output-xml> [--chain-length <new-length>] [--store-every <new-store-every>] [--log-every <new-log-every>]
+```
