@@ -1,5 +1,7 @@
 from lxml import etree
 from pathlib import Path
+from sys import stdout
+from io import StringIO
 
 class XMLLoadError(Exception):
     """Custom exception for XML loading issues."""
@@ -7,6 +9,10 @@ class XMLLoadError(Exception):
 
 class PrivateAttributeError(Exception):
     """Custom exception for private attribute access issues."""
+    pass
+
+class NoOutputPathError(Exception):
+    """Custom exception for missing output path."""
     pass
 
 class BeastXML:
@@ -62,8 +68,11 @@ class BeastXML:
         """
         Save the XML tree back to file with pretty formatting.
         """
-        if output_path is None:
-            output_path = self.path
+        try:
+            assert output_path is not None
+        except AssertionError:
+            raise NoOutputPathError("Output path must be specified to save the XML.")
+        
 
         self._tree.write(
             str(output_path),

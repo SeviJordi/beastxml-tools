@@ -72,6 +72,5 @@ def modify_chain(
         console.print(f"[green]Updated logEvery to {new_log_every}[/green]")
 
     # Save file
-    output = output_path if output_path else xml_path
-    beast_xml.save(output)
-    console.print(f"[bold green]Chain parameters updated and saved to {output}[/bold green]")
+    beast_xml.save(output_path)
+    console.print(f"[bold green]Chain parameters updated and saved to {output_path}[/bold green]")

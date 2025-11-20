@@ -5,6 +5,8 @@ from beastxml_tools.operations.modify_prior import modify_prior as modify_prior_
 from beastxml_tools.operations.prior_inspector import inspect_prior as inspect_prior_func
 from beastxml_tools.operations.modify_chain import modify_chain as modify_chain_func
 
+# default output is stdout
+
 app = typer.Typer(help="Tools for working with BEAST XML files")
 
 @app.command()
@@ -24,7 +26,7 @@ def modify_prior(
     path: str = typer.Argument(..., help="Path to the BEAST XML file."),
     prior_id: str = typer.Option(..., "--prior-id", "-id", help="ID of the prior to modify in the XML file."),
     output: str = typer.Option(
-        None, "--output", "-o",
+        ..., "--output", "-o",
         help="Output file path. If not provided, the input file is overwritten."
     )
 ):
@@ -50,7 +52,7 @@ def modify_chain(
     new_store_every: int = typer.Option(None, "--store-every", "-se", help="New store every value."),
     new_log_every: int = typer.Option(None, "--log-every", "-le", help="New log every value."),
     output_path: str = typer.Option(
-        None, "--output", "-o",
+        ..., "--output", "-o",
         help="Output file path. If not provided, the input file is overwritten."
     )
 ):
@@ -64,6 +66,6 @@ def modify_chain(
         new_log_every,
         output_path
     )
-    
+
 if __name__ == "__main__":
     app()
