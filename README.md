@@ -66,3 +66,10 @@ beastxml modify-prior <path-to-xml> --prior-id <prior_id> --output <output-xml>
 2. Prompts you to select a distribution.  
 3. Prompts you to enter new parameter values.  
 4. Saves the modified XML to the specified output file.
+
+### **4. Inspect a prior**
+Visualize and get summary statistics of a prior distribution.
+
+```bash
+beastxml inspect-prior
+```
