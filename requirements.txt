@@ -3,3 +3,6 @@ rich
 typer
 pytest
 black
+scipy
+numpy
+plotly

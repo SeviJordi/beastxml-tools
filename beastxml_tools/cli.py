@@ -2,6 +2,7 @@ import typer
 from beastxml_tools.operations.validate import validate_xml
 from beastxml_tools.operations.summarize import summarize_xml
 from beastxml_tools.operations.modify_prior import modify_prior as modify_prior_func
+from beastxml_tools.operations.prior_inspector import inspect_prior as inspect_prior_func
 app = typer.Typer(help="Tools for working with BEAST XML files")
 
 @app.command()
@@ -29,6 +30,16 @@ def modify_prior(
     Interactively modify a prior in a BEAST XML file.
     """
     modify_prior_func(path, prior_id, output)
+
+@app.command()
+def inspect_prior():
+    """
+    Interactively inspect a probability distribution.
+
+    Lists available distributions, prompts for parameters,
+    then outputs summary statistics and a plot of the distribution.
+    """
+    inspect_prior_func()
 
 if __name__ == "__main__":
     app()

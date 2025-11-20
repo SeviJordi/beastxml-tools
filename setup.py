@@ -7,7 +7,10 @@ setup(
     install_requires=[
         "lxml",
         "rich",
-        "typer"
+        "typer",
+        "scipy",
+        "numpy",
+        "plotly"
     ],
     entry_points={
         "console_scripts": [
