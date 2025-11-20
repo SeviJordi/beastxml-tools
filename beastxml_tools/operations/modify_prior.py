@@ -1,36 +1,86 @@
 from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt
-from beastxml_tools.utils.xml_loader import load_xml, save_xml, XMLLoadError
+from lxml import etree
+from beastxml_tools.utils.xml_loader import BeastXML, XMLLoadError
 
 console = Console()
 
+SUPPORTED_DISTS = BeastXML.SUPPORTED_DISTS
 
-SUPPORTED_DISTS = {
-    "LogNormal": ["M", "S"],
-    "Beta": ["alpha", "beta"],
-    "Uniform":[],
-    "Exponential": ["mean"],
-    "OneOnX": []
-}
 
+
+class BeastXMLManipulator(BeastXML):
+
+    def find_prior_by_id(self, prior_id: str):
+        priors = self.search(f"//distribution[@id='{prior_id}']")
+        priors += self.search(f"//prior[@id='{prior_id}']")
+        return priors
+    
+    def summarize_prior(self, prior):
+        summary = {}
+        for child in prior.xpath("./*"):
+            summary['distribution'] = child.tag
+            params = {}
+            for param in child.xpath("./parameter"):
+                params[param.get("name")] = param.text
+            summary['parameters'] = params
+        return summary
+    
+    def update_prior(self, prior, new_dist: str, new_params: dict, offset: str = None):
+        # Remove old nested distributions
+        for child in prior.xpath("./*"):
+            prior.remove(child)
+
+        # Create new nested distribution
+        all_ids = self.get_all_ids()
+        i = 1
+        while True:
+            new_name = f"{new_dist}DistributionModel." + str(i)
+            if new_name not in all_ids:
+                break
+            i += 1
+
+        new_elem = etree.Element(new_dist)
+        new_elem.set("id", new_name)
+        new_elem.set("name", "distr")
+        if offset:
+            new_elem.set("offset", offset)
+
+        for pname, pval in new_params.items():
+            p_elem = etree.Element("parameter")
+            
+            i = 1
+            while True:
+                candidate_id = f"RealParameter.{pname}." + str(i)
+                if candidate_id not in all_ids:
+                    break
+                i += 1
+
+            p_elem.set("id", candidate_id)
+            p_elem.set("spec", "parameter.RealParameter")
+            p_elem.set("name", pname)
+            p_elem.set("estimate", "false")
+            p_elem.text = pval
+            new_elem.append(p_elem)
+
+        prior.append(new_elem)
+
+    
 def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     """
     Interactively modify a prior in a BEAST XML file.
     """
 
     try:
-        tree, root = load_xml(xml_path)
+        beast_xml = BeastXMLManipulator(xml_path)
+
     except XMLLoadError as e:
         console.print(f"[red]Error:[/red] {e}")
         return
 
     # Find the prior by id
-    priors = []
-    priors_dist = [ x for x in root.xpath(f"//distribution[@id='{prior_id}']") if x.get("x") is not None ]
-    priors_pri  = [ x for x in root.xpath(f"//prior[@id='{prior_id}']") if x.get("x") is None ]
-    priors.extend(priors_dist)
-    priors.extend(priors_pri)
+    priors = beast_xml.find_prior_by_id(prior_id)
     if not priors:
         console.print(f"[red]No prior found with id '{prior_id}'[/red]")
         return
@@ -40,23 +90,21 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
         return
     
     prior = priors[0]
+
     # Summary of current prior
+    summary = beast_xml.summarize_prior(prior)
     console.print(f"[bold cyan]Current prior '{prior_id}':[/bold cyan]")
+
     # Show current distribution
-    current_dist = None
-    for child in prior.xpath("./*"):
-        current_dist = child.tag
-        break
+    current_dist = summary.get('distribution', None)
     if current_dist:
         console.print(f"  Distribution: [green]{current_dist}[/green]")
     else:
         console.print("  Distribution: [red]None found[/red]")
     
     # parameters
-    params = {}
-    for child in prior.xpath("./*"):
-        for param in child.xpath("./parameter"):
-            params[param.get("name")] = param.text
+    params = summary.get('parameters', {})
+
     if params:
         console.print("  Parameters:")
         for pname, pval in params.items():
@@ -86,34 +134,14 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
         value = Prompt.ask(f"Enter new value for {param}")
         new_params[param] = value
 
-    # Replace the nested distribution with new parameters
-    # Remove old nested distributions
-    for child in prior.xpath("./*"):
-        prior.remove(child)
-
-    # Create new nested distribution
-    from lxml import etree
-    new_elem = etree.Element(selected_dist)
-    new_elem.set("id", f"{selected_dist}DistributionModel.1")
-    new_elem.set("name", "distr")
-    # ask for an optional offset
+    # Ask for offset if applicable
     offset = Prompt.ask("Enter offset value (or leave blank for none)", default="")
-    if offset:
-        new_elem.set("offset", offset)
+    offset = offset if offset else None
 
-
-    for pname, pval in new_params.items():
-        p_elem = etree.Element("parameter")
-        p_elem.set("id", f"RealParameter.{pname}")
-        p_elem.set("spec", "parameter.RealParameter")
-        p_elem.set("name", pname)
-        p_elem.set("estimate", "false")
-        p_elem.text = pval
-        new_elem.append(p_elem)
-
-    prior.append(new_elem)
+    # Update prior in XML
+    beast_xml.update_prior(prior, selected_dist, new_params)
 
     # Save file
-    output_file = output_path or xml_path
-    save_xml(tree, output_file)
-    console.print(f"[bold green]Prior '{prior_id}' updated and saved to {output_file}[/bold green]")
+    output = output_path if output_path else xml_path
+    beast_xml.save(output)
+    console.print(f"[bold green]Prior '{prior_id}' updated and saved to {output}[/bold green]")

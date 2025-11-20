@@ -3,15 +3,10 @@ import numpy as np
 import plotly.graph_objects as go
 from rich.console import Console
 from rich.prompt import Prompt
-
+from beastxml_tools.utils.xml_loader import BeastXML
 console = Console()
 
-SUPPORTED_DISTS = {
-   "LogNormal": ["M", "S"],
-    "Beta": ["alpha", "beta"],
-    "Uniform":[],
-    "Exponential": ["mean"]
-}
+SUPPORTED_DISTS = BeastXML.SUPPORTED_DISTS
 
 
 def inspect_prior():
@@ -93,6 +88,3 @@ def inspect_prior():
     )
     fig.show()
 
-
-if __name__ == "__main__":
-    inspect_prior()

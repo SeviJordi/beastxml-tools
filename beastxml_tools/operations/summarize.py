@@ -2,10 +2,161 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from beastxml_tools.utils.xml_loader import load_xml, XMLLoadError
+from beastxml_tools.utils.xml_loader import BeastXML, XMLLoadError
 
 console = Console()
 
+class BeastXMLSummarizer:
+    """
+    Class of BeastXML to add summarization methods.
+    """
+    def __init__(self, xml: BeastXML):
+        self.xml = xml
+        self.chain = {
+            "length": 0,
+            "storeEvery": 0,
+            "logEvery": 0
+        }
+
+        self.sequences = {
+            "ntaxa": 0,
+            "states": 0,
+            "aln_len": 0
+        }
+        self.clock_models = []
+        self.substitution_models = []
+        self.parameters = []
+        self.priors = []
+        self.summarize()
+
+    def summarize(self):
+        """
+        Summarize important components of the BEAST XML file.
+        """
+
+        # Taxa
+        taxa = self.xml.search("//sequence")
+        self.sequences["ntaxa"] = len(taxa)
+        self.sequences["states"] = taxa[0].get("totalcount") if taxa else "Unknown"
+        self.sequences["aln_len"] = len(taxa[0].get("value")) if taxa else "Unknown"
+        filtered = self.xml.search("//data[@spec='FilteredAlignment']")
+        if filtered:
+            constant_sites = map(int, filtered[0].get("constantSiteWeights").split())
+            self.sequences["aln_len"] += sum(constant_sites)
+            
+        # Chain length in <run> element(s)
+        runs = self.xml.search("//run")
+        self.chain["length"] = runs[0].get("chainLength") if runs else "Unknown"
+        self.chain["storeEvery"] = self.xml.search("//state")[0].get("storeEvery") if runs else "Unknown"
+        self.chain["logEvery"] = self.xml.search("//logger[@id='tracelog']")[0].get("logEvery") if self.xml.search("//logger[@id='tracelog']") else "Unknown"
+
+        # Clock models
+        self.clock_models = self.get_clock_models()
+
+        # Substitution models
+        self.substitution_models = self.get_substitution_models()
+        
+        # Parameters
+        self.parameters = self.extract_params()
+
+        # Priors
+        self.priors = self.extract_priors()
+
+
+    def get_clock_models(self):
+        models = []
+        branch_rate_model = self.xml.search("//branchRateModel")
+        clock_model = branch_rate_model[0].get("spec").split(".")[-1] if branch_rate_model else "Unknown"
+        if branch_rate_model:
+            models.append(f"{clock_model} (id={branch_rate_model[0].get('id')})")
+        else:
+            models.append("None found")
+        return models
+
+    def get_substitution_models(self):
+        models = []
+        subt_model = self.xml.search("//substModel")[0].get("spec") if self.xml.search("//substModel") else "Unknown"
+        has_gamma = bool(self.xml.search("//siteModel")[0].get("shape"))
+        has_invariants = bool(self.xml.search("//siteModel")[0].get("proportionInvariant"))
+        if has_gamma and has_invariants:
+            subt_model += "+G+I"
+        elif has_gamma:
+            subt_model += "+G"
+        elif has_invariants:
+            subt_model += "+I"
+        models.append(f"{subt_model} (id={self.xml.search('//substModel')[0].get('id')})" if self.xml.search("//substModel") else "None found")
+        return models
+    
+
+    def extract_params(self):
+        params = []
+
+        for p in self.xml.search("//parameter[@name='stateNode']"):
+            upper = p.get("upper", "Undefined")
+            lower = p.get("lower", "Undefined")
+            param_info = {
+                "name": p.get("id", "unknown"),
+                "value": p.text.strip() if p.text else "None",
+                "upper": upper,
+                "lower": lower
+            }
+            params.append(param_info)
+
+        return params
+    
+
+    def extract_priors(self):
+        prior_block = self.xml.search("//distribution[@id='prior']")
+
+        if not prior_block:
+            return []
+
+        prior_block = prior_block[0]
+
+        priors = []
+
+        # each nested distribution inside <distribution id="prior">
+        for dist in prior_block.xpath(".//distribution"):
+            if dist.get("x") is not None:
+                prior_info = {
+                    "id": dist.get("id", "unknown"),
+                    "x": dist.get("x", "unknown"),
+                    "type": dist.xpath("./*[not(self::parameter)][1]")[0].tag,
+                    "parameters": []
+                }
+
+                # parameters inside this distribution
+                for p in dist.xpath(".//parameter"):
+                    pname = p.get("name", p.tag)
+                    value = p.text.strip() if p.text else "None"
+
+                    prior_info["parameters"].append(
+                        {"name": pname, "value": value}
+                    )
+
+                priors.append(prior_info)
+
+        for dist in self.xml.search("//prior"):
+            if dist.get("x") is not None:
+                prior_info = {
+                    "id": dist.get("id", "unknown"),
+                    "x": dist.get("x", "unknown"),
+                    "type": dist.xpath("./*[not(self::parameter)][1]")[0].tag,
+                    "parameters": []
+                }
+
+                # parameters inside this distribution
+                for p in dist.xpath(".//parameter"):
+                    pname = p.get("name", p.tag)
+                    value = p.text.strip() if p.text else "None"
+
+                    prior_info["parameters"].append(
+                        {"name": pname, "value": value}
+                    )
+
+                priors.append(prior_info)
+
+        return priors
 
 def summarize_xml(path: str):
     """
@@ -14,70 +165,37 @@ def summarize_xml(path: str):
     console.print(f"[bold cyan]Summarizing:[/bold cyan] {path}")
 
     try:
-        tree, root = load_xml(path)
+        beast_xml = BeastXML(path)
+        summarizer = BeastXMLSummarizer(beast_xml)
     except XMLLoadError as e:
         console.print(Panel.fit(str(e), title="❌ XML Error", style="bold red"))
         return
 
     # ================
-    # Collect summaries
-    # ================
-
-    ## Taxa
-    taxa = root.xpath("//sequence")
-    ntaxa = len(taxa)
-
-    ## Chain length in <run> element(s)
-    runs = root.xpath("//run")
-    chain_length = runs[0].get("chainLength") if runs else "Unknown"
-
-    ## Clock models
-    clock_models = []
-    branch_rate_model = root.xpath("//branchRateModel")
-    clock_model = branch_rate_model[0].get("spec").split(".")[-1] if branch_rate_model else "Unknown"
-    clock_models.append(f"{clock_model} (id={branch_rate_model[0].get('id')})" if branch_rate_model else "None found")
-
-    if not clock_models:
-        clock_models.append("None found")
-
-    ## Substitution models
-    submodels = []
-    subt_model = root.xpath("//substModel")[0].get("spec") if root.xpath("//substModel") else "Unknown"
-    has_gamma = bool(root.xpath("//siteModel")[0].get("shape"))
-    has_invariants = bool(root.xpath("//siteModel")[0].get("proportionInvariant"))
-    if has_gamma and has_invariants:
-        subt_model += "+G+I"
-    elif has_gamma:
-        subt_model += "+G"
-    elif has_invariants:
-        subt_model += "+I"
-
-    submodels.append(f"{subt_model} (id={root.xpath('//substModel')[0].get('id')})" if root.xpath("//substModel") else "None found")
-
-
-    if not submodels:
-        submodels.append("None found")
-
-    ## Tree prior
-    priors = extract_priors(root)
-
-    # ================
     # Display results
     # ================
+    # title="📌 Overview"
+    # chain info
+    chain = Table(title="📊 Chain Overview")
+    chain.add_row("Chain length:", str(summarizer.chain["length"]))
+    chain.add_row("Store every:", str(summarizer.chain["storeEvery"]))
+    chain.add_row("Log every:", str(summarizer.chain["logEvery"]))
 
-    # Overview
-    overview = Table(show_header=False)
-    overview.add_row("Taxa:", str(ntaxa))
-    overview.add_row("Chain length:", str(chain_length))
+    console.print(chain)
 
-    console.print(Panel(overview, title="📌 Overview", expand=False))
 
+    # sequences
+    seq_table = Table(title="🧬 Sequence Data")
+    seq_table.add_row("Number of taxa:", str(summarizer.sequences["ntaxa"]))
+    seq_table.add_row("Number of states:", str(summarizer.sequences["states"]))
+    seq_table.add_row("Alignment length:", str(summarizer.sequences["aln_len"]))
+    console.print(seq_table)
 
     # Clock models
     table_clock = Table(title="⏱ Clock Models")
     table_clock.add_column("Models")
 
-    for cm in clock_models:
+    for cm in summarizer.clock_models:
         table_clock.add_row(cm)
 
     console.print(table_clock)
@@ -86,13 +204,13 @@ def summarize_xml(path: str):
     table_sub = Table(title="🧬 Substitution Models")
     table_sub.add_column("Models")
 
-    for sm in submodels:
+    for sm in summarizer.substitution_models:
         table_sub.add_row(sm)
 
     console.print(table_sub)
 
     # Parameters
-    params = extract_params(root)
+    params = summarizer.parameters
 
     if not params:
         console.print(Panel("No model parameters found", title="❌ Parameters", style="red"))
@@ -112,9 +230,9 @@ def summarize_xml(path: str):
         )
 
     console.print(table_params)
-    
+
     # priors
-    priors = extract_priors(root)
+    priors = summarizer.priors
 
     if not priors:
         console.print(Panel("No priors found", title="❌ Priors", style="red"))
@@ -138,81 +256,3 @@ def summarize_xml(path: str):
     console.print(table)
     return
 
-def extract_priors(root):
-    """
-    Extract priors, their distributions, and parameter values.
-    Returns a list of dicts.
-    """
-    prior_block = root.xpath("//distribution[@id='prior']")
-
-    if not prior_block:
-        return []
-
-    prior_block = prior_block[0]
-
-    priors = []
-
-    # each nested distribution inside <distribution id="prior">
-    for dist in prior_block.xpath(".//distribution"):
-        if dist.get("x") is not None:
-            prior_info = {
-                "id": dist.get("id", "unknown"),
-                "x": dist.get("x", "unknown"),
-                "type": dist.xpath("./*[not(self::parameter)][1]")[0].tag,
-                "parameters": []
-            }
-
-            # parameters inside this distribution
-            for p in dist.xpath(".//parameter"):
-                pname = p.get("name", p.tag)
-                value = p.text.strip() if p.text else "None"
-
-                prior_info["parameters"].append(
-                    {"name": pname, "value": value}
-                )
-
-            priors.append(prior_info)
-
-# each nested distribution inside <distribution id="prior">
-    for dist in root.xpath("//prior"):
-        if dist.get("x") is not None:
-            prior_info = {
-                "id": dist.get("id", "unknown"),
-                "x": dist.get("x", "unknown"),
-                "type": dist.xpath("./*[not(self::parameter)][1]")[0].tag,
-                "parameters": []
-            }
-
-            # parameters inside this distribution
-            for p in dist.xpath(".//parameter"):
-                pname = p.get("name", p.tag)
-                value = p.text.strip() if p.text else "None"
-
-                prior_info["parameters"].append(
-                    {"name": pname, "value": value}
-                )
-
-            priors.append(prior_info)
-
-    return priors
-
-
-def extract_params(root):
-    """
-    Extract model parameters and their initial values.
-    Returns a list of dicts.
-    """
-    params = []
-
-    for p in root.xpath("//parameter[@name='stateNode']"):
-        upper = p.get("upper", "Undefined")
-        lower = p.get("lower", "Undefined")
-        param_info = {
-            "name": p.get("id", "unknown"),
-            "value": p.text.strip() if p.text else "None",
-            "upper": upper,
-            "lower": lower
-        }
-        params.append(param_info)
-
-    return params

@@ -5,40 +5,85 @@ class XMLLoadError(Exception):
     """Custom exception for XML loading issues."""
     pass
 
+class PrivateAttributeError(Exception):
+    """Custom exception for private attribute access issues."""
+    pass
 
-def load_xml(path: str):
-    """
-    Load and parse a BEAST XML file.
+class BeastXML:
 
-    Returns:
-        tree: the parsed XML tree
-        root: the root XML element
-    """
+    SUPPORTED_DISTS = {
+    "LogNormal": ["M", "S"],
+    "Beta": ["alpha", "beta"],
+    "Uniform":[],
+    "Exponential": ["mean"],
+    "OneOnX": []
+}
+    
 
-    path = Path(path)
-
-    if not path.exists():
-        raise XMLLoadError(f"File does not exist: {path}")
-
-    try:
-        parser = etree.XMLParser(remove_blank_text=True)
-        tree = etree.parse(str(path), parser)
-        root = tree.getroot()
-        return tree, root
-
-    except etree.XMLSyntaxError as e:
-        raise XMLLoadError(f"XML syntax error in {path}: {e}") from e
+    def __init__(self, path: str):
+        self.path = Path(path)
+        self._tree = None
+        self._root = None
+        self.load()
 
 
-def save_xml(tree, path: str):
-    """
-    Save the XML tree back to file with pretty formatting.
-    """
-    path = Path(path)
+# Getters and setters
+    @property
+    def tree(self):
+        return self._tree
 
-    tree.write(
-        str(path),
-        pretty_print=True,
-        xml_declaration=True,
-        encoding="UTF-8",
-    )
+    @property
+    def root(self):
+        return self._root
+
+    @root.setter
+    def root(self, value):
+        raise PrivateAttributeError("Direct modification of 'root' is not allowed.")
+    
+    @tree.setter
+    def tree(self, value):
+        raise PrivateAttributeError("Direct modification of 'tree' is not allowed.")
+
+    def load(self):
+        """
+        Load and parse the BEAST XML file.
+        """
+        if not self.path.exists():
+            raise XMLLoadError(f"File does not exist: {self.path}")
+
+        try:
+            parser = etree.XMLParser(remove_blank_text=True)
+            self._tree = etree.parse(str(self.path), parser)
+            self._root = self._tree.getroot()
+        except etree.XMLSyntaxError as e:
+            raise XMLLoadError(f"XML syntax error in {self.path}: {e}") from e
+
+    def save(self, output_path: str = None):
+        """
+        Save the XML tree back to file with pretty formatting.
+        """
+        if output_path is None:
+            output_path = self.path
+
+        self._tree.write(
+            str(output_path),
+            pretty_print=True,
+            xml_declaration=True,
+            encoding="UTF-8",
+        )
+
+
+    def search(self, xpath: str):
+        """
+        Search the XML tree using an XPath expression.
+        """
+        return self._root.xpath(xpath)
+    
+
+    def get_all_ids(self):
+        ids = []
+        for elem in self.search("//*[@id]"):
+            eid = elem.get("id")
+            if eid:
+                ids.append(eid)
+        return ids

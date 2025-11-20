@@ -22,7 +22,7 @@ def modify_prior(
     path: str = typer.Argument(..., help="Path to the BEAST XML file."),
     prior_id: str = typer.Option(..., "--prior-id", "-id", help="ID of the prior to modify in the XML file."),
     output: str = typer.Option(
-        ..., "--output", "-o",
+        None, "--output", "-o",
         help="Output file path. If not provided, the input file is overwritten."
     )
 ):
