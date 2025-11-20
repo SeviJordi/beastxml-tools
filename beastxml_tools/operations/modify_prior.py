@@ -10,7 +10,7 @@ SUPPORTED_DISTS = BeastXML.SUPPORTED_DISTS
 
 
 
-class BeastXMLManipulator(BeastXML):
+class BeastXMLPriorManipulator(BeastXML):
 
     def find_prior_by_id(self, prior_id: str):
         priors = self.search(f"//distribution[@id='{prior_id}']")
@@ -73,7 +73,7 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     """
 
     try:
-        beast_xml = BeastXMLManipulator(xml_path)
+        beast_xml = BeastXMLPriorManipulator(xml_path)
 
     except XMLLoadError as e:
         console.print(f"[red]Error:[/red] {e}")
