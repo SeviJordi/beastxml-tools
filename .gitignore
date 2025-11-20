@@ -1,0 +1,68 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+.ENV/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear on external volumes
+.Spotlight-V100
+.Trashes
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# Ignore outputs from rich tables or temporary XML edits (optional)
+*.xml.bak
