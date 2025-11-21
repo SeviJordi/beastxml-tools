@@ -11,6 +11,8 @@ It provides easy-to-use commands for **validation, summarization, and prior modi
 - **Summarize XML**: Extract key information such as taxa, substitution models, clock models, tree priors, and MCMC chain settings.  
 - **Detailed Priors**: Summarize prior distributions and parameters with the `--prior` flag.  
 - **Modify Priors**: Interactively update priors in the XML, choosing a distribution and specifying new parameter values.  
+- **Inspect Priors**: Visualize and get summary statistics of prior distributions.
+- **Update MCMC Settings**: Modify MCMC chain parameters like length, store every, and log every.
 
 ---
 
