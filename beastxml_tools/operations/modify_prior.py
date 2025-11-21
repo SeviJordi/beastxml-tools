@@ -61,7 +61,7 @@ class BeastXMLPriorManipulator(BeastXML):
             p_elem.set("spec", "parameter.RealParameter")
             p_elem.set("name", pname)
             p_elem.set("estimate", "false")
-            p_elem.text = pval
+            p_elem.text = str(pval)
             new_elem.append(p_elem)
 
         prior.append(new_elem)
