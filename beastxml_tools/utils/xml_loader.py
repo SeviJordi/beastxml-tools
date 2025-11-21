@@ -30,6 +30,8 @@ class BeastXML:
         self.path = Path(path)
         self._tree = None
         self._root = None
+        self._beast_version = None
+        self._packages = []
         self.load()
 
 
@@ -42,6 +44,14 @@ class BeastXML:
     def root(self):
         return self._root
 
+    @property
+    def beast_version(self):
+        return self._beast_version
+    
+    @property
+    def packages(self):
+        return self._packages
+    
     @root.setter
     def root(self, value):
         raise PrivateAttributeError("Direct modification of 'root' is not allowed.")
@@ -49,6 +59,14 @@ class BeastXML:
     @tree.setter
     def tree(self, value):
         raise PrivateAttributeError("Direct modification of 'tree' is not allowed.")
+    
+    @beast_version.setter
+    def root(self, value):
+        raise PrivateAttributeError("Direct modification of 'beast_version' is not allowed.")
+    
+    @packages.setter
+    def tree(self, value):
+        raise PrivateAttributeError("Direct modification of 'packages' is not allowed.")
 
     def load(self):
         """
@@ -61,6 +79,9 @@ class BeastXML:
             parser = etree.XMLParser(remove_blank_text=True)
             self._tree = etree.parse(str(self.path), parser)
             self._root = self._tree.getroot()
+            self._beast_version = self.search("//beast")[0].get("version")
+            self._packages = self.search("//beast")[0].get("required").split(":")
+            
         except etree.XMLSyntaxError as e:
             raise XMLLoadError(f"XML syntax error in {self.path}: {e}") from e
 

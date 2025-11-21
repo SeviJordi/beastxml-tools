@@ -175,7 +175,18 @@ def summarize_xml(path: str):
     # Display results
     # ================
     # title="📌 Overview"
+    beast_overview = f"[bold green]Beast version:[/bold green] [bold cyan]{beast_xml.beast_version}[bold cyan]"
+
+    beast_overview += f"\n[bold green]Packages:[/bold green]"
+
+    for package in beast_xml.packages:
+        beast_overview +=f"\n[bold cyan]  -{package}[bold cyan]"
+    
+    console.print(Panel.fit(beast_overview, title="📌 BEAST Overview", style="bold purple"))
+    console.print("\n")
+
     # chain info
+
     chain = Table(title="📊 Chain Overview")
     chain.add_row("Chain length:", str(summarizer.chain["length"]))
     chain.add_row("Store every:", str(summarizer.chain["storeEvery"]))
