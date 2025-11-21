@@ -1,6 +1,6 @@
 from rich.console import Console
 from rich.table import Table
-from rich.prompt import Prompt
+from rich.prompt import Prompt, FloatPrompt, IntPrompt
 from lxml import etree
 from beastxml_tools.utils.xml_loader import BeastXML, XMLLoadError
 
@@ -27,7 +27,7 @@ class BeastXMLPriorManipulator(BeastXML):
             summary['parameters'] = params
         return summary
     
-    def update_prior(self, prior, new_dist: str, new_params: dict, offset: str = None):
+    def update_prior(self, prior, new_dist: str, new_params: dict, offset: float = None):
         # Remove old nested distributions
         for child in prior.xpath("./*"):
             prior.remove(child)
@@ -113,6 +113,7 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
         console.print("  Parameters: [red]None found[/red]")    
 
     console.print("\n[bold]Modify Prior[/bold]")
+
     # Show available distributions
     table = Table(title=f"Available distributions")
     table.add_column("Index")
@@ -131,11 +132,11 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     # Prompt for new parameter values
     new_params = {}
     for param in SUPPORTED_DISTS[selected_dist]:
-        value = Prompt.ask(f"Enter new value for {param}")
+        value = FloatPrompt.ask(f"Enter new value for {param}")
         new_params[param] = value
 
     # Ask for offset if applicable
-    offset = Prompt.ask("Enter offset value (or leave blank for none)", default="")
+    offset = FloatPrompt.ask("Enter offset value (or leave blank for none)", default="")
     offset = offset if offset else None
 
     # Update prior in XML
