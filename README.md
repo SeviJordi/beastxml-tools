@@ -30,7 +30,7 @@ pip install -e .
 
 ## 🛠 Usage
 
-The CLI tool is called `beastxml`. It has three main commands: `validate`, `summarize`, and `modify-prior`.
+The CLI tool is called `beastxml`. It has five commands: `validate`, `summarize`, `modify-prior`, `inspect-prior`, and `update-mcmc`.
 
 ---
 
