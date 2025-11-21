@@ -6,6 +6,7 @@ from beastxml_tools.utils.xml_loader import BeastXML, XMLLoadError
 
 console = Console()
 
+
 class BeastXMLChainManipulator(BeastXML):
     """
     Class of BeastXML to add chain modification methods.
@@ -35,14 +36,14 @@ class BeastXMLChainManipulator(BeastXML):
             logger[0].set("logEvery", str(new_log_every))
         else:
             raise ValueError("No <logger id='tracelog'> element found in the XML.")
-        
+
 
 def modify_chain(
     xml_path: str,
     new_chain_length: int = None,
     new_store_every: int = None,
     new_log_every: int = None,
-    output_path: str = None
+    output_path: str = None,
 ):
     """
     Modify chain parameters in the BEAST XML file.
@@ -56,9 +57,11 @@ def modify_chain(
 
     # Update chain parameters
     if new_chain_length is None and new_store_every is None and new_log_every is None:
-        console.print("[yellow]No modifications specified. Use options to set new chain parameters.[/yellow]")
+        console.print(
+            "[yellow]No modifications specified. Use options to set new chain parameters.[/yellow]"
+        )
         return
-    
+
     if new_chain_length is not None:
         beast_xml.update_chain_length(new_chain_length)
         console.print(f"[green]Updated chain length to {new_chain_length}[/green]")
@@ -73,4 +76,6 @@ def modify_chain(
 
     # Save file
     beast_xml.save(output_path)
-    console.print(f"[bold green]Chain parameters updated and saved to {output_path}[/bold green]")
+    console.print(
+        f"[bold green]Chain parameters updated and saved to {output_path}[/bold green]"
+    )

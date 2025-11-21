@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from rich.console import Console
 from rich.prompt import Prompt
 from beastxml_tools.utils.xml_loader import BeastXML
+
 console = Console()
 
 SUPPORTED_DISTS = BeastXML.SUPPORTED_DISTS
@@ -84,7 +85,6 @@ def inspect_prior():
         title=f"{dist_name} Distribution",
         xaxis_title="Value",
         yaxis_title="Density",
-        template="plotly_white"
+        template="plotly_white",
     )
     fig.show()
-

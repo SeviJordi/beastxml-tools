@@ -6,10 +6,12 @@ from beastxml_tools.utils.xml_loader import BeastXML, XMLLoadError
 
 console = Console()
 
+
 class BeastXMLValidator:
     """
     Class of BeastXML to add validation methods.
     """
+
     def __init__(self, xml: BeastXML):
         self.xml = xml
         self._issues = []
@@ -49,13 +51,13 @@ class BeastXMLValidator:
     @property
     def duplicated_ids(self):
         return self._duplicated_ids
-    
+
     def has_duplicated_ids(self):
         """
         Check for duplicated IDs in the XML.
         """
         return len(self._duplicated_ids) > 0
-    
+
     def get_duplicated_ids(self):
         """
         Return a list of duplicated IDs found in the XML.
@@ -70,6 +72,7 @@ class BeastXMLValidator:
                     id_count[eid] = 1
 
         return [eid for eid, count in id_count.items() if count > 1]
+
 
 def validate_xml(path: str):
     """
@@ -91,26 +94,26 @@ def validate_xml(path: str):
     # Print issues if any
     issues = validator.issues
     if issues:
-        console.print(Panel.fit(
-            "\n".join(issues),
-            title="⚠️ Possible BEAST Issues",
-            style="bold red"
-        ))
+        console.print(
+            Panel.fit(
+                "\n".join(issues), title="⚠️ Possible BEAST Issues", style="bold red"
+            )
+        )
     else:
         console.print(Panel.fit("Basic BEAST structure looks OK ✔", style="bold green"))
 
     # Check for duplicated IDs
     if validator.has_duplicated_ids():
-        console.print(Panel.fit(
-            "Duplicated IDs found in the XML. This may cause issues in BEAST runs.",
-            title="⚠️ Duplicated IDs",
-            style="bold red"
-        ))
-    
+        console.print(
+            Panel.fit(
+                "Duplicated IDs found in the XML. This may cause issues in BEAST runs.",
+                title="⚠️ Duplicated IDs",
+                style="bold red",
+            )
+        )
+
         for did in validator.duplicated_ids:
             console.print(f" - [red]{did}[/red]")
-            
+
     else:
         console.print(Panel.fit("No duplicated IDs found ✔", style="bold green"))
-        
- 

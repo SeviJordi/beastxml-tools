@@ -9,25 +9,26 @@ console = Console()
 SUPPORTED_DISTS = BeastXML.SUPPORTED_DISTS
 
 
-
 class BeastXMLPriorManipulator(BeastXML):
 
     def find_prior_by_id(self, prior_id: str):
         priors = self.search(f"//distribution[@id='{prior_id}']")
         priors += self.search(f"//prior[@id='{prior_id}']")
         return priors
-    
+
     def summarize_prior(self, prior):
         summary = {}
         for child in prior.xpath("./*"):
-            summary['distribution'] = child.tag
+            summary["distribution"] = child.tag
             params = {}
             for param in child.xpath("./parameter"):
                 params[param.get("name")] = param.text
-            summary['parameters'] = params
+            summary["parameters"] = params
         return summary
-    
-    def update_prior(self, prior, new_dist: str, new_params: dict, offset: float = None):
+
+    def update_prior(
+        self, prior, new_dist: str, new_params: dict, offset: float = None
+    ):
         # Remove old nested distributions
         for child in prior.xpath("./*"):
             prior.remove(child)
@@ -49,7 +50,7 @@ class BeastXMLPriorManipulator(BeastXML):
 
         for pname, pval in new_params.items():
             p_elem = etree.Element("parameter")
-            
+
             i = 1
             while True:
                 candidate_id = f"RealParameter.{pname}." + str(i)
@@ -66,7 +67,7 @@ class BeastXMLPriorManipulator(BeastXML):
 
         prior.append(new_elem)
 
-    
+
 def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     """
     Interactively modify a prior in a BEAST XML file.
@@ -86,9 +87,11 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
         return
 
     if len(priors) > 1:
-        console.print(f"[yellow]Multiple priors found with id '{prior_id}'. Using the first one.[/yellow]")
+        console.print(
+            f"[yellow]Multiple priors found with id '{prior_id}'. Using the first one.[/yellow]"
+        )
         return
-    
+
     prior = priors[0]
 
     # Summary of current prior
@@ -96,21 +99,21 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     console.print(f"[bold cyan]Current prior '{prior_id}':[/bold cyan]")
 
     # Show current distribution
-    current_dist = summary.get('distribution', None)
+    current_dist = summary.get("distribution", None)
     if current_dist:
         console.print(f"  Distribution: [green]{current_dist}[/green]")
     else:
         console.print("  Distribution: [red]None found[/red]")
-    
+
     # parameters
-    params = summary.get('parameters', {})
+    params = summary.get("parameters", {})
 
     if params:
         console.print("  Parameters:")
         for pname, pval in params.items():
             console.print(f"    - {pname}: [yellow]{pval}[/yellow]")
     else:
-        console.print("  Parameters: [red]None found[/red]")    
+        console.print("  Parameters: [red]None found[/red]")
 
     console.print("\n[bold]Modify Prior[/bold]")
 
@@ -125,8 +128,11 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     console.print(table)
 
     # Ask user which distribution to apply
-    choice_index = Prompt.ask("Select distribution by index", choices=[str(i) for i in range(1, len(SUPPORTED_DISTS)+1)])
-    selected_dist = list(SUPPORTED_DISTS.keys())[int(choice_index)-1]
+    choice_index = Prompt.ask(
+        "Select distribution by index",
+        choices=[str(i) for i in range(1, len(SUPPORTED_DISTS) + 1)],
+    )
+    selected_dist = list(SUPPORTED_DISTS.keys())[int(choice_index) - 1]
     console.print(f"You selected: [bold green]{selected_dist}[/bold green]")
 
     # Prompt for new parameter values
@@ -145,4 +151,6 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     # Save file
     output = output_path if output_path else xml_path
     beast_xml.save(output)
-    console.print(f"[bold green]Prior '{prior_id}' updated and saved to {output}[/bold green]")
+    console.print(
+        f"[bold green]Prior '{prior_id}' updated and saved to {output}[/bold green]"
+    )
