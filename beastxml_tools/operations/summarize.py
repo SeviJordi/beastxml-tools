@@ -182,25 +182,25 @@ def summarize_xml(path: str):
     for package in beast_xml.packages:
         beast_overview +=f"\n[bold cyan]  -{package}[bold cyan]"
     
-    console.print(Panel.fit(beast_overview, title="📌 BEAST Overview", style="bold purple"))
+    console.print(Panel.fit(beast_overview, title="📌 BEAST Overview", style="bold purple"), justify="center")
     console.print("\n")
 
     # chain info
 
-    chain = Table(title="📊 Chain Overview")
+    chain = Table(title="📊 Chain Overview", show_header = False)
     chain.add_row("Chain length:", str(summarizer.chain["length"]))
     chain.add_row("Store every:", str(summarizer.chain["storeEvery"]))
     chain.add_row("Log every:", str(summarizer.chain["logEvery"]))
 
-    console.print(chain)
+    console.print(chain, justify="center")
 
 
     # sequences
-    seq_table = Table(title="🧬 Sequence Data")
+    seq_table = Table(title="🧬 Sequence Data", show_header = False)
     seq_table.add_row("Number of taxa:", str(summarizer.sequences["ntaxa"]))
     seq_table.add_row("Number of states:", str(summarizer.sequences["states"]))
     seq_table.add_row("Alignment length:", str(summarizer.sequences["aln_len"]))
-    console.print(seq_table)
+    console.print(seq_table, justify="center")
 
     # Clock models
     table_clock = Table(title="⏱ Clock Models")
@@ -209,7 +209,7 @@ def summarize_xml(path: str):
     for cm in summarizer.clock_models:
         table_clock.add_row(cm)
 
-    console.print(table_clock)
+    console.print(table_clock, justify="center")
 
     # Substitution models
     table_sub = Table(title="🧬 Substitution Models")
@@ -218,13 +218,13 @@ def summarize_xml(path: str):
     for sm in summarizer.substitution_models:
         table_sub.add_row(sm)
 
-    console.print(table_sub)
+    console.print(table_sub, justify="center")
 
     # Parameters
     params = summarizer.parameters
 
     if not params:
-        console.print(Panel("No model parameters found", title="❌ Parameters", style="red"))
+        console.print(Panel("No model parameters found", title="❌ Parameters", style="red"), justify="center")
         return
     
     table_params = Table(title="⚙️ Model Parameters")
@@ -240,7 +240,7 @@ def summarize_xml(path: str):
             p["upper"]
         )
 
-    console.print(table_params)
+    console.print(table_params, justify="center")
 
     # priors
     priors = summarizer.priors
@@ -264,6 +264,6 @@ def summarize_xml(path: str):
         distr_def = pr["type"] + f" ({param_text})" if param_text else pr["type"]
         table.add_row(pr["id"], pr["x"], distr_def)
 
-    console.print(table)
+    console.print(table, justify="center")
     return
 
