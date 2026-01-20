@@ -36,7 +36,7 @@ class BeastXMLSummarizer:
         filtered = self.xml.search("//data[@spec='FilteredAlignment']")
         if filtered:
             constant_sites = map(int, filtered[0].get("constantSiteWeights").split())
-            self.sequences["aln_len"] += sum(constant_sites)
+            self.sequences["aln_len"] += sum(constant_sites) if taxa else ""
 
         # Chain length in <run> element(s)
         runs = self.xml.search("//run")
@@ -143,6 +143,11 @@ class BeastXMLSummarizer:
 
                     prior_info["parameters"].append({"name": pname, "value": value})
 
+                # Other params
+                for key, val in dist.xpath("./*[not(self::parameter)][1]")[0].items():
+                    if key not in ["id", "x", "offset", "name", "spec"]:
+                        prior_info["parameters"].append({"name": key, "value": val})
+
                 priors.append(prior_info)
 
         for dist in self.xml.search("//prior"):
@@ -160,6 +165,10 @@ class BeastXMLSummarizer:
                     value = p.text.strip() if p.text else "None"
 
                     prior_info["parameters"].append({"name": pname, "value": value})
+
+                for key, val in dist.xpath("./*[not(self::parameter)][1]")[0].items():
+                    if key not in ["id", "x", "offset", "name", "spec"]:
+                        prior_info["parameters"].append({"name": key, "value": val})
 
                 priors.append(prior_info)
 
