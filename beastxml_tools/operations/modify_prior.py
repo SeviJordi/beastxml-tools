@@ -3,10 +3,9 @@ from rich.table import Table
 from rich.prompt import Prompt, FloatPrompt, IntPrompt
 from lxml import etree
 from beastxml_tools.utils.xml_loader import BeastXML, XMLLoadError
+from beastxml_tools.utils.distributions import LogNormal, Beta, Uniform, OneOnX, Exponential, DistributionManager
 
 console = Console()
-
-SUPPORTED_DISTS = BeastXML.SUPPORTED_DISTS
 
 
 class BeastXMLPriorManipulator(BeastXML):
@@ -80,6 +79,9 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
         console.print(f"[red]Error:[/red] {e}")
         return
 
+    # Genrate distro object
+    distro_manager = DistributionManager(LogNormal(), Beta(), OneOnX(), Exponential(), Uniform())
+
     # Find the prior by id
     priors = beast_xml.find_prior_by_id(prior_id)
     if not priors:
@@ -122,22 +124,22 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     table.add_column("Index")
     table.add_column("Distribution")
     table.add_column("Parameters")
-    for i, dist in enumerate(SUPPORTED_DISTS.keys(), start=1):
-        params = ", ".join(SUPPORTED_DISTS[dist]) if SUPPORTED_DISTS[dist] else "None"
-        table.add_row(str(i), dist, params)
+    for i, distro in enumerate(distro_manager.distros):
+        params = ", ".join(distro.required_params) if distro.required_params else "None"
+        table.add_row(str(i+1), distro.name, params)
     console.print(table)
 
     # Ask user which distribution to apply
     choice_index = Prompt.ask(
         "Select distribution by index",
-        choices=[str(i) for i in range(1, len(SUPPORTED_DISTS) + 1)],
+        choices=[str(i) for i in range(1, len(distro_manager.distros) + 1)],
     )
-    selected_dist = list(SUPPORTED_DISTS.keys())[int(choice_index) - 1]
-    console.print(f"You selected: [bold green]{selected_dist}[/bold green]")
+    selected_dist = list(distro_manager.distros)[int(choice_index) - 1]
+    console.print(f"You selected: [bold green]{selected_dist.name}[/bold green]")
 
     # Prompt for new parameter values
     new_params = {}
-    for param in SUPPORTED_DISTS[selected_dist]:
+    for param in selected_dist.required_params:
         value = FloatPrompt.ask(f"Enter new value for {param}")
         new_params[param] = value
 
@@ -146,7 +148,7 @@ def modify_prior(xml_path: str, prior_id: str, output_path: str = None):
     offset = offset if offset else None
 
     # Update prior in XML
-    beast_xml.update_prior(prior, selected_dist, new_params)
+    beast_xml.update_prior(prior, selected_dist.name, new_params)
 
     # Save file
     output = output_path if output_path else xml_path
